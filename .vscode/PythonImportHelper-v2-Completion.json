@@ -621,7 +621,7 @@
         "kind": 5,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "DATABASE_URL = os.environ.get(\"DATABASE_URL\", \"mysql+pymysql://user:password@localhost/dbname\")\nengine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\nBase = declarative_base()\nclass User(Base):\n    __tablename__ = \"users\"\n    id = Column(Integer, primary_key=True, index=True)\n    username = Column(String(255), nullable=False)\n    phone_number = Column(String(50), nullable=False)\n    age = Column(Integer, nullable=False)",
+        "peekOfCode": "DATABASE_URL = os.environ.get(\"DATABASE_URL\", \"mysql+pymysql://user:password@localhost/dbname\")\nprint(f\"Database URL: {DATABASE_URL}\")\nengine = create_engine(DATABASE_URL)\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\nBase = declarative_base()\nclass User(Base):\n    __tablename__ = \"users\"\n    id = Column(Integer, primary_key=True, index=True)\n    username = Column(String(255), nullable=False)\n    phone_number = Column(String(50), nullable=False)",
         "detail": "main",
         "documentation": {}
     },
