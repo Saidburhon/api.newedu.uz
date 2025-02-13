@@ -3,6 +3,10 @@ import time
 import random
 import string
 import uvicorn
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel, EmailStr, Field, field_validator
