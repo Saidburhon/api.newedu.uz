@@ -2,9 +2,10 @@ import os
 import time
 import random
 import string
+import uvicorn
 
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import (create_engine, Column, Integer, String, Boolean,
                         ForeignKey, TIMESTAMP, func, UniqueConstraint, Index)
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Session
@@ -63,7 +64,7 @@ class RegisterRequest(BaseModel):
     age: int
     email: EmailStr = None
 
-    @validator("phone_number")
+    @field_validator("phone_number", mode='before')
     def validate_phone_number(cls, v):
         if not v.startswith("+998"):
             raise ValueError("Phone number must start with +998")
@@ -74,7 +75,7 @@ class OTPVerification(BaseModel):
     phone_number: str
     otp: str
 
-    @validator("phone_number")
+    @field_validator("phone_number", mode='before')
     def validate_phone_number(cls, v):
         if not v.startswith("+998"):
             raise ValueError("Phone number must start with +998")
@@ -246,6 +247,9 @@ def delete_blocked_app(id: int, db: Session = Depends(get_db)):
     db.delete(blocked_app)
     db.commit()
     return {"message": "Blocked app deleted"}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=3000, log_level="info")
 
 # -----------------------------
 # Security Note on API Keys

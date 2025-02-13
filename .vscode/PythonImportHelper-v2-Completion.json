@@ -36,6 +36,15 @@
         "documentation": {}
     },
     {
+        "label": "uvicorn",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "uvicorn",
+        "description": "uvicorn",
+        "detail": "uvicorn",
+        "documentation": {}
+    },
+    {
         "label": "FastAPI",
         "importPath": "fastapi",
         "description": "fastapi",
@@ -108,14 +117,6 @@
         "documentation": {}
     },
     {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
         "label": "EmailStr",
         "importPath": "pydantic",
         "description": "pydantic",
@@ -124,7 +125,15 @@
         "documentation": {}
     },
     {
-        "label": "validator",
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "field_validator",
         "importPath": "pydantic",
         "description": "pydantic",
         "isExtraImport": true,
@@ -459,7 +468,7 @@
         "kind": 6,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "class RegisterRequest(BaseModel):\n    username: str = Field(..., min_length=6)\n    phone_number: str\n    age: int\n    email: EmailStr = None\n    @validator(\"phone_number\")\n    def validate_phone_number(cls, v):\n        if not v.startswith(\"+998\"):\n            raise ValueError(\"Phone number must start with +998\")\n        return v",
+        "peekOfCode": "class RegisterRequest(BaseModel):\n    username: str = Field(..., min_length=6)\n    phone_number: str\n    age: int\n    email: EmailStr = None\n    @field_validator(\"phone_number\", mode='before')\n    def validate_phone_number(cls, v):\n        if not v.startswith(\"+998\"):\n            raise ValueError(\"Phone number must start with +998\")\n        return v",
         "detail": "main",
         "documentation": {}
     },
@@ -468,7 +477,7 @@
         "kind": 6,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "class OTPVerification(BaseModel):\n    phone_number: str\n    otp: str\n    @validator(\"phone_number\")\n    def validate_phone_number(cls, v):\n        if not v.startswith(\"+998\"):\n            raise ValueError(\"Phone number must start with +998\")\n        return v\nclass SetPassword(BaseModel):\n    phone_number: str",
+        "peekOfCode": "class OTPVerification(BaseModel):\n    phone_number: str\n    otp: str\n    @field_validator(\"phone_number\", mode='before')\n    def validate_phone_number(cls, v):\n        if not v.startswith(\"+998\"):\n            raise ValueError(\"Phone number must start with +998\")\n        return v\nclass SetPassword(BaseModel):\n    phone_number: str",
         "detail": "main",
         "documentation": {}
     },
@@ -612,7 +621,7 @@
         "kind": 2,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "def delete_blocked_app(id: int, db: Session = Depends(get_db)):\n    blocked_app = db.query(BlockedApp).filter(BlockedApp.id == id).first()\n    if not blocked_app:\n        raise HTTPException(status_code=404, detail=\"Blocked app not found\")\n    db.delete(blocked_app)\n    db.commit()\n    return {\"message\": \"Blocked app deleted\"}\n# -----------------------------\n# Security Note on API Keys\n# -----------------------------",
+        "peekOfCode": "def delete_blocked_app(id: int, db: Session = Depends(get_db)):\n    blocked_app = db.query(BlockedApp).filter(BlockedApp.id == id).first()\n    if not blocked_app:\n        raise HTTPException(status_code=404, detail=\"Blocked app not found\")\n    db.delete(blocked_app)\n    db.commit()\n    return {\"message\": \"Blocked app deleted\"}\nif __name__ == \"__main__\":\n    uvicorn.run(app, host=\"127.0.0.1\", port=3000, log_level=\"info\")\n# -----------------------------",
         "detail": "main",
         "documentation": {}
     },
