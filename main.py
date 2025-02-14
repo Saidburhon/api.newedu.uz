@@ -150,6 +150,11 @@ app = FastAPI(title="Unified API for Mobile & Web")
 # -----------------------------
 # Endpoints
 # -----------------------------
+@app.get('/', include_in_schema=False)
+async def state():
+    return {'Status': 'Working', 'Developer':'Saidburkhon', 'Documentation':'api.newedu.uz/docs', 'Contact':'+998972707007', 'Company':"New Edu - Yangi Ta'lim"}
+
+
 # Registration: Step 1 - Request OTP
 @app.post("/register")
 def register_user(reg: RegisterRequest, background_tasks: BackgroundTasks):
