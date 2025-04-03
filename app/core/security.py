@@ -28,10 +28,15 @@ def verify_password(plain_password, hashed_password) -> bool:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Create a new access token"""
     to_encode = data.copy()
+    
+    # Ensure 'sub' is a string 
+    if 'sub' in to_encode and not isinstance(to_encode['sub'], str):
+        to_encode['sub'] = str(to_encode['sub'])
+    
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
@@ -48,19 +53,45 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     )
     
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id: int = payload.get("sub")
-        user_type: str = payload.get("type")
+        print(f"Token received: {token[:15]}...")
+        print(f"Using secret key: {settings.SECRET_KEY[:5]}...")
         
-        if user_id is None or user_type is None:
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            print(f"Decoded payload: {payload}")
+            
+            # Extract user_id from 'sub' claim (now as string)
+            user_id_str = payload.get("sub")
+            user_type = payload.get("type")
+            
+            if user_id_str is None or user_type is None:
+                print("Missing user_id or user_type in payload")
+                raise credentials_exception
+            
+            # Convert user_id from string to integer
+            try:
+                user_id = int(user_id_str)
+            except (ValueError, TypeError):
+                print(f"Invalid user_id format: {user_id_str}")
+                raise credentials_exception
+                
+        except jwt.PyJWTError as e:
+            print(f"JWT decode error: {str(e)}")
+            # Try to decode without verification to see what's inside
+            try:
+                decoded = jwt.decode(token, options={"verify_signature": False})
+                print(f"Token content (not verified): {decoded}")
+            except Exception as inner_e:
+                print(f"Cannot decode token content: {str(inner_e)}")
             raise credentials_exception
             
-    except jwt.PyJWTError:
+    except Exception as e:
+        print(f"General exception: {str(e)}")
         raise credentials_exception
-    
+
     user = db.query(User).filter(User.id == user_id).first()
-    
     if user is None or user.user_type != user_type:
+        print(f"User not found or user_type mismatch: {user_type}")
         raise credentials_exception
         
     return user
