@@ -6,7 +6,7 @@ load_dotenv()
 
 class Settings:
     # API details
-    API_V1_STR: str = "/api/v1"
+    API_V1_STR: str = "/v1"
     PROJECT_NAME: str = "NewEdu API"
     PROJECT_DESCRIPTION: str = "API for NewEdu platform where Uzbek youth can get high-tier education"
     VERSION: str = "1.0.0"
