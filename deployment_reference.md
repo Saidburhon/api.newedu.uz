@@ -19,7 +19,7 @@ This document provides a complete reference for deploying the NewEdu API in a pr
 
 - Ubuntu 20.04 LTS or newer (recommended)
 - Python 3.8+ with venv module
-- MySQL 8.0+
+- PostgreSQL 12+ 
 - Nginx 1.18+
 - 2GB RAM minimum (4GB recommended)
 - 20GB storage minimum
@@ -48,39 +48,63 @@ Recommended directory structure:
 
 ## Database Setup
 
-### Installing MySQL
+### Installing PostgreSQL
 
 ```bash
 sudo apt update
-sudo apt install mysql-server
-sudo mysql_secure_installation
+sudo apt install postgresql postgresql-contrib
 ```
 
 ### Creating the Database and User
 
-```sql
-CREATE DATABASE newedu CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'newedu_user'@'localhost' IDENTIFIED BY 'strong_password_here';
-GRANT ALL PRIVILEGES ON newedu.* TO 'newedu_user'@'localhost';
-FLUSH PRIVILEGES;
+```bash
+sudo -u postgres psql
 ```
 
-### MySQL Performance Optimization
+In the PostgreSQL prompt, run:
 
-Add to `/etc/mysql/my.cnf`:
+```sql
+CREATE DATABASE newedu;
+CREATE USER newedu_user WITH PASSWORD 'strong_password_here';
+GRANT ALL PRIVILEGES ON DATABASE newedu TO newedu_user;
+\c newedu
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO newedu_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO newedu_user;
+```
+
+### PostgreSQL Performance Optimization
+
+Edit the PostgreSQL configuration file:
+
+```bash
+sudo nano /etc/postgresql/12/main/postgresql.conf
+```
+
+Add or modify these settings:
 
 ```ini
-[mysqld]
-innodb_buffer_pool_size = 1G  # Adjust based on available RAM (50% of RAM)
-innodb_log_file_size = 256M
-innodb_flush_log_at_trx_commit = 2
-innodb_flush_method = O_DIRECT
+# Memory settings
+shared_buffers = 1GB                  # 25% of RAM for dedicated server
+work_mem = 32MB                       # Adjust based on complex queries
+maintenance_work_mem = 256MB          # For maintenance operations
+
+# Write settings
+wal_buffers = 16MB                    # Helps with write performance
+commit_delay = 1000                   # Microseconds to wait for commit
+commit_siblings = 5                   # Min concurrent transactions before commit delay
+
+# Query planner
+effective_cache_size = 3GB            # Set to 75% of RAM
+random_page_cost = 1.1                # Lower for SSDs (4.0 is default)
 
 # Connection settings
-max_connections = 500
-connect_timeout = 60
-interactive_timeout = 600
-wait_timeout = 600
+max_connections = 100                 # Adjust based on expected load
+```
+
+Restart PostgreSQL:
+
+```bash
+sudo systemctl restart postgresql
 ```
 
 ## Application Setup
@@ -115,7 +139,7 @@ nano .env
 Add the following content (modify as needed):
 
 ```
-DATABASE_URL=mysql+pymysql://newedu_user:strong_password_here@localhost/newedu
+DATABASE_URL=postgresql://newedu_user:strong_password_here@localhost/newedu
 JWT_SECRET_KEY=your_very_long_and_secure_random_key_here
 ```
 
@@ -152,8 +176,8 @@ Add the following content:
 ```ini
 [Unit]
 Description=NewEdu FastAPI Service
-After=network.target mysql.service
-Wants=mysql.service
+After=network.target postgresql.service
+Wants=postgresql.service
 
 [Service]
 User=www-data
@@ -298,21 +322,27 @@ Create a backup script at `/var/www/api.newedu.uz/backup.sh`:
 #!/bin/bash
 BACKUP_DIR="/var/backups/newedu"
 DATETIME=$(date +"%Y-%m-%d_%H-%M-%S")
-MYSQL_USER="newedu_user"
-MYSQL_PASS="strong_password_here"
+PG_USER="newedu_user"
+PG_PASS="strong_password_here"
 DATABASE="newedu"
 
 # Create backup directory if it doesn't exist
 mkdir -p "$BACKUP_DIR"
 
+# Set environment variable for password
+export PGPASSWORD="$PG_PASS"
+
 # Database backup
-mysqldump -u "$MYSQL_USER" -p"$MYSQL_PASS" "$DATABASE" | gzip > "$BACKUP_DIR/newedu_db_$DATETIME.sql.gz"
+pg_dump -U "$PG_USER" -h localhost "$DATABASE" | gzip > "$BACKUP_DIR/newedu_db_$DATETIME.sql.gz"
 
 # Code backup
 tar -czvf "$BACKUP_DIR/newedu_code_$DATETIME.tar.gz" -C /var/www api.newedu.uz
 
 # Delete backups older than 30 days
 find "$BACKUP_DIR" -type f -name "*.gz" -mtime +30 -delete
+
+# Clear password from environment
+unset PGPASSWORD
 ```
 
 Make it executable and set up a cron job:
@@ -364,6 +394,25 @@ Install monitoring tools:
 sudo apt install htop iotop netstat
 ```
 
+### PostgreSQL Monitoring
+
+Create a simple monitoring script at `/var/www/api.newedu.uz/monitor_db.sh`:
+
+```bash
+#!/bin/bash
+
+# Connect to PostgreSQL and get stats
+sudo -u postgres psql -c "SELECT count(*) FROM pg_stat_activity;"
+sudo -u postgres psql -c "SELECT datname, numbackends, xact_commit, xact_rollback, blks_read, blks_hit, tup_returned, tup_fetched, tup_inserted, tup_updated, tup_deleted FROM pg_stat_database WHERE datname='newedu';"
+sudo -u postgres psql -c "SELECT pid, usename, application_name, client_addr, state, query_start, wait_event_type, query FROM pg_stat_activity WHERE datname='newedu';"
+```
+
+Make it executable:
+
+```bash
+sudo chmod +x /var/www/api.newedu.uz/monitor_db.sh
+```
+
 ### Consider Advanced Monitoring
 
 For a more robust solution, consider setting up:
@@ -371,6 +420,7 @@ For a more robust solution, consider setting up:
 - Prometheus + Grafana for metrics
 - ELK Stack for log analysis
 - Uptime Robot or similar service for external monitoring
+- pgAdmin for PostgreSQL monitoring
 
 ## Additional Recommendations
 
@@ -388,7 +438,7 @@ sudo chmod 600 /var/www/api.newedu.uz/.env
 ### Regular Maintenance Checklist
 
 - Update OS packages weekly
-- Rotate database logs
+- Run `VACUUM ANALYZE` on PostgreSQL regularly
 - Monitor disk space
 - Check service status
 - Review application logs

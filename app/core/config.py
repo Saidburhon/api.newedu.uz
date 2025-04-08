@@ -12,7 +12,7 @@ class Settings:
     VERSION: str = "1.0.0"
     
     # Database
-    DATABASE_URL: str = os.environ.get("DATABASE_URL", "mysql+pymysql://root:password@localhost/newedu")
+    DATABASE_URL: str = os.environ.get("DATABASE_URL", "postgresql://postgres:password@localhost/newedu")
     
     # Security
     SECRET_KEY: str = os.environ.get("JWT_SECRET_KEY", "your-secret-key-for-dev-only")

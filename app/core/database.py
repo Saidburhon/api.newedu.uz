@@ -5,7 +5,7 @@ from sqlalchemy.pool import QueuePool
 
 from app.core.config import settings
 
-# Create engine with connection pool and timeout settings
+# Create engine with connection pool and timeout settings optimized for PostgreSQL
 engine = create_engine(
     settings.DATABASE_URL,
     pool_size=10,  # Number of connections to keep open
@@ -15,8 +15,7 @@ engine = create_engine(
     pool_pre_ping=True,  # Check connection validity before using
     connect_args={
         'connect_timeout': 60,  # Connection timeout in seconds
-        'read_timeout': 120,  # Read timeout in seconds
-        'write_timeout': 120  # Write timeout in seconds
+        'application_name': 'newedu_api'  # Identifies the application in PostgreSQL logs
     }
 )
 
