@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-
+from datetime import timedelta
+from app.core.security import hash_password, create_access_token, settings
 from app.core.database import get_db
-from app.core.security import hash_password
 from app.models.user import User, Student, Teacher, Admin
 from app.schemas.user import StudentCreate, TeacherCreate, AdminCreate
 
@@ -42,8 +42,22 @@ async def register_student(student_data: StudentCreate, db: Session = Depends(ge
         db.add(new_student)
         db.commit()
 
-        return {"message": "Student registered successfully", "user_id": new_user.id}
-    except IntegrityError:
+        # Generate access token
+        access_token_data = {
+            "sub": str(new_user.id),
+            "phone": new_user.phone_number,
+            "user_type": new_user.user_type
+        }
+        token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token, token_expiry = create_access_token(access_token_data, expires_delta=token_expires)
+
+        return {
+            "message": "Student registered successfully",
+            "user_id": new_user.id,
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expires_at": token_expiry
+        }
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -88,7 +102,22 @@ async def register_teacher(teacher_data: TeacherCreate, db: Session = Depends(ge
         db.add(new_teacher)
         db.commit()
 
-        return {"message": "Teacher registered successfully", "user_id": new_user.id}
+        # Generate access token
+        access_token_data = {
+            "sub": str(new_user.id),
+            "phone": new_user.phone_number,
+            "user_type": new_user.user_type
+        }
+        token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token, token_expiry = create_access_token(access_token_data, expires_delta=token_expires)
+
+        return {
+            "message": "Teacher registered successfully",
+            "user_id": new_user.id,
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expires_at": token_expiry
+        }
     except IntegrityError:
         db.rollback()
         raise HTTPException(
@@ -133,7 +162,22 @@ async def register_admin(admin_data: AdminCreate, db: Session = Depends(get_db))
         db.add(new_admin)
         db.commit()
 
-        return {"message": "Admin registered successfully", "user_id": new_user.id}
+        # Generate access token
+        access_token_data = {
+            "sub": str(new_user.id),
+            "phone": new_user.phone_number,
+            "user_type": new_user.user_type
+        }
+        token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token, token_expiry = create_access_token(access_token_data, expires_delta=token_expires)
+
+        return {
+            "message": "Admin registered successfully",
+            "user_id": new_user.id,
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expires_at": token_expiry
+        }
     except IntegrityError:
         db.rollback()
         raise HTTPException(
