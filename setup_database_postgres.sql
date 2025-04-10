@@ -104,7 +104,7 @@ CREATE TRIGGER update_admins_modtime
     EXECUTE FUNCTION update_modified_column();
 
 -- Create a database user for the application (uncomment and modify as needed)
--- CREATE USER newedu_user WITH PASSWORD 'secure_password';
--- GRANT ALL PRIVILEGES ON DATABASE newedu TO newedu_user;
--- GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO newedu_user;
--- GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO newedu_user;
+CREATE USER newedu_user WITH PASSWORD 'NewEduDB_pass080726';
+GRANT ALL PRIVILEGES ON DATABASE newedu TO newedu_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO newedu_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO newedu_user;

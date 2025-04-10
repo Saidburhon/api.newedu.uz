@@ -8,7 +8,7 @@ from app.core.config import settings
 # Create engine with connection pool and timeout settings optimized for PostgreSQL
 engine = create_engine(
     settings.DATABASE_URL,
-    pool_size=10,  # Number of connections to keep open
+    pool_size=100,  # Number of connections to keep open
     max_overflow=20,  # Max connections beyond pool_size
     pool_timeout=30,  # Seconds to wait before timing out
     pool_recycle=1800,  # Recycle connections after 30 minutes
