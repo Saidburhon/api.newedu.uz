@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.endpoints import auth, users, register, student_profile, parent_profile, blocking, test_jwt, devices, preferences, schools, apps, logs, websites
+from app.api.endpoints import auth, users, register, student_profile, parent_profile, blocking, test_jwt, devices, preferences, schools, apps, logs, websites, locations
 
 api_router = APIRouter()
 
@@ -17,4 +17,5 @@ api_router.include_router(schools.router, prefix="/schools", tags=["schools"])
 api_router.include_router(apps.router, prefix="/apps", tags=["applications"])
 api_router.include_router(logs.router, prefix="/logs", tags=["activity_logs"])
 api_router.include_router(websites.router, prefix="/websites", tags=["websites_and_policies"])
+api_router.include_router(locations.router, prefix="/locations", tags=["geographic_locations"])
 api_router.include_router(test_jwt.router, prefix="/test-jwt", tags=["testing"])
