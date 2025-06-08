@@ -62,17 +62,18 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
             
             # Extract user_id from 'sub' claim (now as string)
             user_id_str = payload.get("sub")
-            user_type = payload.get("type")
+            user_type_id = payload.get("type")
             
-            if user_id_str is None or user_type is None:
-                print("Missing user_id or user_type in payload")
+            if user_id_str is None or user_type_id is None:
+                print("Missing user_id or user_type_id in payload")
                 raise credentials_exception
             
             # Convert user_id from string to integer
             try:
                 user_id = int(user_id_str)
+                user_type_id = int(user_type_id)
             except (ValueError, TypeError):
-                print(f"Invalid user_id format: {user_id_str}")
+                print(f"Invalid user_id or user_type_id format")
                 raise credentials_exception
                 
         except jwt.PyJWTError as e:
@@ -90,8 +91,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
 
     user = db.query(User).filter(User.id == user_id).first()
-    if user is None or user.user_type != user_type:
-        print(f"User not found or user_type mismatch: {user_type}")
+    if user is None or user.user_type_id != user_type_id:
+        print(f"User not found or user_type_id mismatch: {user_type_id}")
         raise credentials_exception
         
     return user

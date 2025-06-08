@@ -14,7 +14,7 @@ async def check_phone_number(data: PhoneNumberCheck, db: Session = Depends(get_d
     """Check if a phone number exists for the given user type"""
     user = db.query(User).filter(
         User.phone_number == data.phone_number,
-        User.user_type == data.user_type
+        User.user_type_id == data.user_type_id
     ).first()
 
     if user:
@@ -34,7 +34,7 @@ async def login(data: LoginRequest, db: Session = Depends(get_db)):
     """Login endpoint that returns a JWT token"""
     user = db.query(User).filter(
         User.phone_number == data.phone_number,
-        User.user_type == data.user_type
+        User.user_type_id == data.user_type_id
     ).first()
 
     if not user or not verify_password(data.password, user.password_hash):
@@ -45,13 +45,13 @@ async def login(data: LoginRequest, db: Session = Depends(get_db)):
         )
 
     access_token, expires_at = create_access_token(
-        data={"sub": user.id, "type": user.user_type}
+        data={"sub": user.id, "type": user.user_type_id}
     )
 
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user_id": user.id,
-        "user_type": user.user_type,
+        "user_type_id": user.user_type_id,
         "expires_at": expires_at
     }

@@ -1,110 +1,417 @@
--- Create NewEdu database if it doesn't exist
-CREATE DATABASE newedu;
-
-\c newedu
-
--- Drop tables if they exist (for clean setup)
-DROP TABLE IF EXISTS admins;
-DROP TABLE IF EXISTS teachers;
-DROP TABLE IF EXISTS students;
-DROP TABLE IF EXISTS users;
-
--- Create user type enum
-DO $$ 
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_type_enum') THEN
-        CREATE TYPE user_type_enum AS ENUM ('student', 'teacher', 'admin');
-    END IF;
-END
-$$;
-
--- Create users table (base table for all user types)
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    phone_number VARCHAR(50) NOT NULL UNIQUE,
-    full_name VARCHAR(255) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    user_type user_type_enum NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TYPE "priorities" AS ENUM (
+  'neutral',
+  'important',
+  'vital'
 );
 
--- Create indexes for users table
-CREATE INDEX idx_users_phone_number ON users(phone_number);
-CREATE INDEX idx_users_user_type ON users(user_type);
-
--- Create students table
-CREATE TABLE students (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    school VARCHAR(255) NOT NULL,
-    grade INTEGER NOT NULL,
-    class_id VARCHAR(50) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TYPE "general_type" AS ENUM (
+  'Social',
+  'Education',
+  'Games',
+  'Neutral'
 );
 
--- Create indexes for students table
-CREATE INDEX idx_students_school ON students(school);
-CREATE INDEX idx_students_grade ON students(grade);
-
--- Create teachers table
-CREATE TABLE teachers (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    school VARCHAR(255) NOT NULL,
-    subjects TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TYPE "app_type" AS ENUM (
+  'Productivity',
+  'Shopping',
+  'Food_Drinks',
+  'Books_References',
+  'Lifestyle',
+  'Entertainment',
+  'Tools',
+  'Business',
+  'Music_Audio',
+  'Education',
+  'Social',
+  'Games',
+  'News_Magazines',
+  'Travel_Local'
 );
 
--- Create index for teachers table
-CREATE INDEX idx_teachers_school ON teachers(school);
-
--- Create admins table
-CREATE TABLE admins (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    role VARCHAR(100) NOT NULL DEFAULT 'staff',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TYPE "app_request_statuses" AS ENUM (
+  'pending',
+  'approved',
+  'rejected',
+  'error'
 );
 
--- Create index for admins table
-CREATE INDEX idx_admins_role ON admins(role);
+CREATE TYPE "genders" AS ENUM (
+  'female',
+  'male'
+);
 
--- Create trigger function for updating 'updated_at' timestamp
-CREATE OR REPLACE FUNCTION update_modified_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+CREATE TYPE "shifts" AS ENUM (
+  'morning',
+  'evening'
+);
 
--- Create triggers for each table
-CREATE TRIGGER update_users_modtime
-    BEFORE UPDATE ON users
-    FOR EACH ROW
-    EXECUTE FUNCTION update_modified_column();
+CREATE TYPE "os_types" AS ENUM (
+  'ios',
+  'android',
+  'windows',
+  'macos',
+  'linux',
+  'chromeos'
+);
 
-CREATE TRIGGER update_students_modtime
-    BEFORE UPDATE ON students
-    FOR EACH ROW
-    EXECUTE FUNCTION update_modified_column();
+CREATE TYPE "android_ui" AS ENUM (
+  'Stock',
+  'OneUI',
+  'MIUI',
+  'MagicOS',
+  'HarmonyOS',
+  'ColorOS',
+  'OxygenOS',
+  'HyperOS',
+  'RealmeUI'
+);
 
-CREATE TRIGGER update_teachers_modtime
-    BEFORE UPDATE ON teachers
-    FOR EACH ROW
-    EXECUTE FUNCTION update_modified_column();
+CREATE TYPE "phone_brands" AS ENUM (
+  'samsung',
+  'apple',
+  'xiaomi',
+  'vivo',
+  'oppo',
+  'realme',
+  'asus',
+  'nokia',
+  'artel',
+  'google',
+  'oneplus',
+  'nothing',
+  'motorola',
+  'redmi',
+  'poco',
+  'huawei',
+  'honor',
+  'tecno'
+);
 
-CREATE TRIGGER update_admins_modtime
-    BEFORE UPDATE ON admins
-    FOR EACH ROW
-    EXECUTE FUNCTION update_modified_column();
+CREATE TYPE "action_degrees" AS ENUM (
+  'neutral',
+  'suspicious',
+  'terrible'
+);
 
--- Create a database user for the application (uncomment and modify as needed)
-CREATE USER newedu_user WITH PASSWORD 'NewEduDB_pass080726';
-GRANT ALL PRIVILEGES ON DATABASE newedu TO newedu_user;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO newedu_user;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO newedu_user;
+CREATE TYPE "languages" AS ENUM (
+  'uzb_lat',
+  'uzb_cyr',
+  'russian',
+  'english'
+);
+
+CREATE TYPE "themes" AS ENUM (
+  'dark',
+  'light',
+  'w_light',
+  'w_dark'
+);
+
+CREATE TABLE "user_tasks" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "name" varchar,
+  "user_id" integer,
+  "type" varchar,
+  "priority" priorities,
+  "scheduled_to" timestamp,
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "updated_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "user_type" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "name" varchar NOT NULL,
+  "user_level" integer,
+  "school" integer,
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "updated_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "website" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "domain" varchar UNIQUE NOT NULL,
+  "icon" varchar,
+  "visit_count" integer DEFAULT 0,
+  "type" varchar,
+  "added_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "app" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "name" varchar NOT NULL,
+  "package" varchar UNIQUE,
+  "icon" varchar,
+  "install_count" integer DEFAULT 0,
+  "type" app_type,
+  "added_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "policy" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "name" varchar NOT NULL,
+  "is_whitelist_app" boolean DEFAULT true,
+  "is_whitelist_web" boolean DEFAULT true,
+  "targeted_user_type_id" integer,
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "updated_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "policy_app" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "policy_id" integer NOT NULL,
+  "app_id" integer NOT NULL,
+  "duration" integer
+);
+
+CREATE TABLE "policy_web" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "policy_id" integer NOT NULL,
+  "website_id" integer NOT NULL,
+  "duration" integer
+);
+
+CREATE TABLE "schools" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "name" varchar NOT NULL,
+  "region" integer,
+  "city" integer,
+  "district" integer,
+  "address" varchar,
+  "latitude" decimal(10,8),
+  "longitude" decimal(11,8),
+  "location" json,
+  "radius" decimal,
+  "policy_id" integer,
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "updated_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "app_request" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "app_id" integer NOT NULL,
+  "from_user_id" integer NOT NULL,
+  "reason" text,
+  "status" app_request_statuses DEFAULT 'pending',
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "updated_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "app_requests_log" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "app_request_id" integer NOT NULL,
+  "status_was" app_request_statuses,
+  "status_changed_to" app_request_statuses,
+  "responsible_admin_id" integer,
+  "basis" text,
+  "created_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "user" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "username" varchar UNIQUE,
+  "phone_number" varchar,
+  "user_type_id" integer,
+  "password_hash" varchar NOT NULL,
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "updated_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "student_info" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "user_id" integer NOT NULL,
+  "first_name" varchar,
+  "last_name" varchar,
+  "patronymic" varchar,
+  "age" integer,
+  "gender" genders,
+  "school" integer NOT NULL,
+  "shift" shifts,
+  "father" integer,
+  "mother" integer
+);
+
+CREATE TABLE "parent_info" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "user_id" integer NOT NULL,
+  "first_name" varchar,
+  "last_name" varchar,
+  "patronymic" varchar,
+  "age" integer,
+  "gender" genders,
+  "passport_id" varchar
+);
+
+CREATE TABLE "regions" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "name" varchar UNIQUE
+);
+
+CREATE TABLE "cities" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "name" varchar UNIQUE,
+  "parent_region" integer
+);
+
+CREATE TABLE "districts" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "name" varchar UNIQUE,
+  "parent_region" integer
+);
+
+CREATE TABLE "os" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "type" os_types NOT NULL,
+  "version" varchar,
+  "ui" android_ui,
+  "ui_version" varchar,
+  "created_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "device" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "brand" phone_brands,
+  "model" varchar,
+  "os_id" integer,
+  "ram" integer,
+  "storage" integer,
+  "IMEI" varchar,
+  "created_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "user_devices" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "user_id" integer NOT NULL,
+  "device_id" integer NOT NULL,
+  "created_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "action" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "name" varchar UNIQUE NOT NULL,
+  "degree" action_degrees,
+  "created_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "log" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "user_devices_id" integer NOT NULL,
+  "user_app_id" integer,
+  "action_id" integer NOT NULL,
+  "done_at" timestamp NOT NULL DEFAULT (now()),
+  "location" varchar,
+  "details" text
+);
+
+CREATE TABLE "setup" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "user_id" integer NOT NULL,
+  "user_device_id" integer NOT NULL,
+  "camera" boolean,
+  "location" boolean,
+  "usage_access" boolean,
+  "admin_app" boolean,
+  "accessibility_features" boolean,
+  "pop_up" boolean,
+  "notification_service" boolean,
+  "battery_optimization" boolean,
+  "gps" boolean,
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "updated_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "user_apps" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "user_devices_id" integer NOT NULL,
+  "app_id" integer NOT NULL,
+  "added_at" timestamp NOT NULL DEFAULT (now()),
+  "is_active" boolean DEFAULT true
+);
+
+CREATE TABLE "user_preferences" (
+  "id" INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  "user_id" integer NOT NULL,
+  "language" languages,
+  "theme" themes
+);
+
+CREATE UNIQUE INDEX "app_duration_unique" ON "policy_app" ("app_id", "duration");
+
+CREATE UNIQUE INDEX "website_duration_unique" ON "policy_web" ("website_id", "duration");
+
+CREATE UNIQUE INDEX "user_phone_type_unique" ON "user" ("phone_number", "user_type_id");
+
+CREATE UNIQUE INDEX ON "user_devices" ("user_id", "device_id");
+
+CREATE UNIQUE INDEX ON "user_apps" ("user_devices_id", "app_id");
+
+COMMENT ON COLUMN "policy"."is_whitelist_app" IS 'whitelist(true) or blacklist(false)';
+
+COMMENT ON COLUMN "policy"."is_whitelist_web" IS 'whitelist(true) or blacklist(false)';
+
+ALTER TABLE "user_tasks" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
+
+ALTER TABLE "user_type" ADD FOREIGN KEY ("school") REFERENCES "schools" ("id");
+
+ALTER TABLE "policy" ADD FOREIGN KEY ("targeted_user_type_id") REFERENCES "user_type" ("id");
+
+ALTER TABLE "policy_app" ADD FOREIGN KEY ("policy_id") REFERENCES "policy" ("id");
+
+ALTER TABLE "policy_app" ADD FOREIGN KEY ("app_id") REFERENCES "app" ("id");
+
+ALTER TABLE "policy_web" ADD FOREIGN KEY ("policy_id") REFERENCES "policy" ("id");
+
+ALTER TABLE "policy_web" ADD FOREIGN KEY ("website_id") REFERENCES "website" ("id");
+
+ALTER TABLE "schools" ADD FOREIGN KEY ("region") REFERENCES "regions" ("id");
+
+ALTER TABLE "schools" ADD FOREIGN KEY ("city") REFERENCES "cities" ("id");
+
+ALTER TABLE "schools" ADD FOREIGN KEY ("district") REFERENCES "districts" ("id");
+
+ALTER TABLE "schools" ADD FOREIGN KEY ("policy_id") REFERENCES "policy" ("id");
+
+ALTER TABLE "app_request" ADD FOREIGN KEY ("app_id") REFERENCES "app" ("id");
+
+ALTER TABLE "app_request" ADD FOREIGN KEY ("from_user_id") REFERENCES "user" ("id");
+
+ALTER TABLE "app_requests_log" ADD FOREIGN KEY ("app_request_id") REFERENCES "app_request" ("id");
+
+ALTER TABLE "app_requests_log" ADD FOREIGN KEY ("responsible_admin_id") REFERENCES "user" ("id");
+
+ALTER TABLE "user" ADD FOREIGN KEY ("user_type_id") REFERENCES "user_type" ("id");
+
+ALTER TABLE "student_info" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
+
+ALTER TABLE "student_info" ADD FOREIGN KEY ("school") REFERENCES "schools" ("id");
+
+ALTER TABLE "student_info" ADD FOREIGN KEY ("father") REFERENCES "user" ("id");
+
+ALTER TABLE "student_info" ADD FOREIGN KEY ("mother") REFERENCES "user" ("id");
+
+ALTER TABLE "parent_info" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
+
+ALTER TABLE "cities" ADD FOREIGN KEY ("parent_region") REFERENCES "regions" ("id");
+
+ALTER TABLE "districts" ADD FOREIGN KEY ("parent_region") REFERENCES "regions" ("id");
+
+ALTER TABLE "device" ADD FOREIGN KEY ("os_id") REFERENCES "os" ("id");
+
+ALTER TABLE "user_devices" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
+
+ALTER TABLE "user_devices" ADD FOREIGN KEY ("device_id") REFERENCES "device" ("id");
+
+ALTER TABLE "log" ADD FOREIGN KEY ("user_devices_id") REFERENCES "user_devices" ("id");
+
+ALTER TABLE "log" ADD FOREIGN KEY ("user_app_id") REFERENCES "user_apps" ("id");
+
+ALTER TABLE "log" ADD FOREIGN KEY ("action_id") REFERENCES "action" ("id");
+
+ALTER TABLE "setup" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
+
+ALTER TABLE "setup" ADD FOREIGN KEY ("user_device_id") REFERENCES "user_devices" ("id");
+
+ALTER TABLE "user_apps" ADD FOREIGN KEY ("user_devices_id") REFERENCES "user_devices" ("id");
+
+ALTER TABLE "user_apps" ADD FOREIGN KEY ("app_id") REFERENCES "app" ("id");
+
+ALTER TABLE "user_preferences" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");

@@ -1,12 +1,41 @@
-from typing import Optional, Literal
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+from enum import Enum
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
+
+from app.models.enums import (
+    Priorities, Genders, Shifts, Languages, Themes,
+    AppRequestStatuses
+)
+
+
+class UserTypeBase(BaseModel):
+    """Base schema for user type data"""
+    name: str
+    user_level: Optional[int] = None
+    school: Optional[int] = None
+
+
+class UserTypeCreate(UserTypeBase):
+    """Schema for creating a user type"""
+    pass
+
+
+class UserTypeResponse(UserTypeBase):
+    """Response schema for user type"""
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserBase(BaseModel):
     """Base schema for user data"""
     phone_number: str
-    full_name: str
+    username: Optional[str] = None
+    user_type_id: int
 
     @field_validator("phone_number", mode='before')
     def validate_phone_number(cls, v):
@@ -18,10 +47,31 @@ class UserBase(BaseModel):
         return v
 
 
+class UserCreate(UserBase):
+    """Schema for creating a user"""
+    password: str = Field(..., min_length=6)
+
+
+class UserUpdate(BaseModel):
+    """Schema for updating a user"""
+    phone_number: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+
+
+class UserResponse(UserBase):
+    """Response schema for user"""
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PhoneNumberCheck(BaseModel):
     """Schema for phone number existence check"""
     phone_number: str
-    user_type: Literal["student", "teacher", "admin"]
+    user_type_id: int
 
     @field_validator("phone_number", mode='before')
     def validate_phone_number(cls, v):
@@ -37,38 +87,83 @@ class PhoneNumberCheckResponse(BaseModel):
     message: str
 
 
-class StudentCreate(UserBase):
-    """Schema for creating a student"""
-    password: str = Field(..., min_length=6)
-    school: str
-    grade: int = Field(..., ge=1, le=11)
-    class_id: str
-
-    @field_validator("grade")
-    def validate_grade(cls, v):
-        if v < 1 or v > 11:
-            raise ValueError("Grade must be between 1 and 11")
-        return v
-
-
-class TeacherCreate(UserBase):
-    """Schema for creating a teacher"""
-    password: str = Field(..., min_length=6)
-    school: str
-    subjects: Optional[str] = None
+class StudentInfoBase(BaseModel):
+    """Base schema for student info"""
+    first_name: str
+    last_name: str
+    patronymic: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[Genders] = None
+    school: int
+    shift: Optional[Shifts] = None
+    father: Optional[int] = None
+    mother: Optional[int] = None
 
 
-class AdminCreate(UserBase):
-    """Schema for creating an admin"""
-    password: str = Field(..., min_length=6)
-    role: str = "staff"
+class StudentInfoCreate(StudentInfoBase):
+    """Schema for creating student info"""
+    user_id: int
+
+
+class StudentInfoUpdate(BaseModel):
+    """Schema for updating student info"""
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    patronymic: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[Genders] = None
+    school: Optional[int] = None
+    shift: Optional[Shifts] = None
+    father: Optional[int] = None
+    mother: Optional[int] = None
+
+
+class StudentInfoResponse(StudentInfoBase):
+    """Response schema for student info"""
+    id: int
+    user_id: int
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ParentInfoBase(BaseModel):
+    """Base schema for parent info"""
+    first_name: str
+    last_name: str
+    patronymic: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[Genders] = None
+    passport_id: Optional[str] = None
+
+
+class ParentInfoCreate(ParentInfoBase):
+    """Schema for creating parent info"""
+    user_id: int
+
+
+class ParentInfoUpdate(BaseModel):
+    """Schema for updating parent info"""
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    patronymic: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[Genders] = None
+    passport_id: Optional[str] = None
+
+
+class ParentInfoResponse(ParentInfoBase):
+    """Response schema for parent info"""
+    id: int
+    user_id: int
+    
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LoginRequest(BaseModel):
     """Schema for login requests"""
     phone_number: str
     password: str
-    user_type: Literal["student", "teacher", "admin"]
+    user_type_id: int
 
     @field_validator("phone_number", mode='before')
     def validate_phone_number(cls, v):
@@ -83,16 +178,29 @@ class Token(BaseModel):
     access_token: str
     token_type: str
     user_id: int
-    user_type: str
+    user_type_id: int
     expires_at: int  # Unix timestamp
 
 
-class UserResponse(BaseModel):
-    """Schema for user response data"""
+class UserPreferenceBase(BaseModel):
+    """Base schema for user preferences"""
+    language: Optional[Languages] = None
+    theme: Optional[Themes] = None
+
+
+class UserPreferenceCreate(UserPreferenceBase):
+    """Schema for creating user preferences"""
+    user_id: int
+
+
+class UserPreferenceUpdate(UserPreferenceBase):
+    """Schema for updating user preferences"""
+    pass
+
+
+class UserPreferenceResponse(UserPreferenceBase):
+    """Response schema for user preferences"""
     id: int
-    phone_number: str
-    full_name: str
-    user_type: str
+    user_id: int
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
