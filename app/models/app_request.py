@@ -30,8 +30,8 @@ class AppRequestLog(Base):
     
     id = Column(Integer, primary_key=True)
     app_request_id = Column(Integer, ForeignKey("app_request.id"), nullable=False)
-    status_was = Column(ENUM(AppRequestStatuses), name="app_request_statuses")
-    status_changed_to = Column(ENUM(AppRequestStatuses), name="app_request_statuses")
+    status_was = Column(ENUM(AppRequestStatuses), name="app_request_status_was")
+    status_changed_to = Column(ENUM(AppRequestStatuses), name="app_request_status_changed_to")
     responsible_admin_id = Column(Integer, ForeignKey("user.id"))
     basis = Column(Text)
     created_at = Column(TIMESTAMP, nullable=False, server_default=func.now())

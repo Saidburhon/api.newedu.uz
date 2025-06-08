@@ -5,8 +5,7 @@ from pydantic import BaseModel, ConfigDict, validator, HttpUrl
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User, UserType
-from app.models.device import Website, Policy
+from app.models.user import User, UserType, Website, Policy
 from app.models.enums import GeneralType, Priorities
 
 router = APIRouter()

@@ -5,7 +5,8 @@ from pydantic import BaseModel, ConfigDict
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User, UserPreferences
+from app.models.user import User
+from app.models.preferences import UserPreference
 from app.models.enums import Languages, Themes
 
 router = APIRouter()
@@ -38,9 +39,9 @@ async def get_user_preferences(current_user: User = Depends(get_current_user), d
     """Get the preferences for the current user"""
     
     # Get user preferences
-    preferences = db.query(UserPreferences).filter(UserPreferences.user_id == current_user.id).first()
+    user_preferences = db.query(UserPreference).filter(UserPreference.user_id == current_user.id).first()
     
-    if not preferences:
+    if not user_preferences:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User preferences not found"
@@ -48,13 +49,13 @@ async def get_user_preferences(current_user: User = Depends(get_current_user), d
     
     # Return user preferences
     return {
-        "id": preferences.id,
-        "user_id": preferences.user_id,
-        "language": preferences.language.value if preferences.language else None,
-        "theme": preferences.theme.value if preferences.theme else None,
-        "notifications_enabled": preferences.notifications_enabled,
-        "created_at": preferences.created_at.isoformat() if preferences.created_at else None,
-        "updated_at": preferences.updated_at.isoformat() if preferences.updated_at else None
+        "id": user_preferences.id,
+        "user_id": user_preferences.user_id,
+        "language": user_preferences.language.value if user_preferences.language else None,
+        "theme": user_preferences.theme.value if user_preferences.theme else None,
+        "notifications_enabled": user_preferences.notifications_enabled,
+        "created_at": user_preferences.created_at.isoformat() if user_preferences.created_at else None,
+        "updated_at": user_preferences.updated_at.isoformat() if user_preferences.updated_at else None
     }
 
 
@@ -67,34 +68,34 @@ async def update_user_preferences(
     """Update the preferences for the current user"""
     
     # Get user preferences
-    preferences = db.query(UserPreferences).filter(UserPreferences.user_id == current_user.id).first()
+    user_preferences = db.query(UserPreference).filter(UserPreference.user_id == current_user.id).first()
     
-    if not preferences:
+    if not user_preferences:
         # Create preferences if they don't exist
-        preferences = UserPreferences(user_id=current_user.id)
-        db.add(preferences)
+        user_preferences = UserPreference(user_id=current_user.id)
+        db.add(user_preferences)
     
     # Update preferences
     if preferences_data.language is not None:
-        preferences.language = preferences_data.language
+        user_preferences.language = preferences_data.language
     if preferences_data.theme is not None:
-        preferences.theme = preferences_data.theme
+        user_preferences.theme = preferences_data.theme
     if preferences_data.notifications_enabled is not None:
-        preferences.notifications_enabled = preferences_data.notifications_enabled
+        user_preferences.notifications_enabled = preferences_data.notifications_enabled
     
     try:
         db.commit()
-        db.refresh(preferences)
+        db.refresh(user_preferences)
         
         return {
             "message": "User preferences updated successfully",
-            "id": preferences.id,
-            "user_id": preferences.user_id,
-            "language": preferences.language.value if preferences.language else None,
-            "theme": preferences.theme.value if preferences.theme else None,
-            "notifications_enabled": preferences.notifications_enabled,
-            "created_at": preferences.created_at.isoformat() if preferences.created_at else None,
-            "updated_at": preferences.updated_at.isoformat() if preferences.updated_at else None
+            "id": user_preferences.id,
+            "user_id": user_preferences.user_id,
+            "language": user_preferences.language.value if user_preferences.language else None,
+            "theme": user_preferences.theme.value if user_preferences.theme else None,
+            "notifications_enabled": user_preferences.notifications_enabled,
+            "created_at": user_preferences.created_at.isoformat() if user_preferences.created_at else None,
+            "updated_at": user_preferences.updated_at.isoformat() if user_preferences.updated_at else None
         }
     except Exception as e:
         db.rollback()

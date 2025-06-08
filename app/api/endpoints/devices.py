@@ -7,7 +7,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.device import Device, OS, UserDevice, Setup
-from app.models.enums import OSTypes, PhoneBrands, AndroidUI
+from app.models.enums import OsTypes, PhoneBrands, AndroidUI
 
 router = APIRouter()
 

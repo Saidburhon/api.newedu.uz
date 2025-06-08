@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User, UserType
-from app.models.device import Log, Action, App, Device, UserDevice
+from app.models.user import User, UserType, App
+from app.models.device import Log, Action, Device, UserDevice
 from app.models.enums import ActionDegrees
 
 router = APIRouter()

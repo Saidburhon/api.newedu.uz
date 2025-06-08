@@ -6,8 +6,9 @@ from datetime import datetime
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.user import User, UserType
-from app.models.device import App, UserApp, AppRequest
+from app.models.user import User, UserType, App
+from app.models.device import UserApp
+from app.models.app_request import AppRequest
 from app.models.enums import GeneralType, AppType, AppRequestStatuses, Priorities
 
 router = APIRouter()
