@@ -96,3 +96,16 @@ class Themes(str, Enum):
     LIGHT = "light"
     W_LIGHT = "w_light"
     W_DARK = "w_dark"
+
+
+# User roles for registration
+# If this list changes, update the mapping in the register.py file
+class UserRole(str, Enum):
+    STUDENT = "student"          # 1
+    PARENT = "parent"            # 2
+    TEACHER = "teacher"          # 3
+    DEPUTY_PRINCIPAL = "deputy_principal"  # 4
+    PRINCIPAL = "principal"      # 5
+    DISTRICT_PRINCIPAL = "district_principal"  # 6
+    REGIONAL_PRINCIPAL = "regional_principal"  # 7
+    MINISTRY = "ministry"        # 8

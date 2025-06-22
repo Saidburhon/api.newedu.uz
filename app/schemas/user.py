@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from app.models.enums import (
     Priorities, Genders, Shifts, Languages, Themes,
-    AppRequestStatuses
+    AppRequestStatuses, UserRole
 )
 
 
@@ -47,9 +47,21 @@ class UserBase(BaseModel):
         return v
 
 
-class UserCreate(UserBase):
+class UserCreate(BaseModel):
     """Schema for creating a user"""
+    phone_number: str
+    username: Optional[str] = None
     password: str = Field(..., min_length=6)
+    role: UserRole
+    
+    @field_validator("phone_number", mode='before')
+    def validate_phone_number(cls, v):
+        # Strip any whitespace
+        v = v.strip()
+        # Validate Uzbekistan phone number format
+        if not v.startswith("+998") or len(v) != 13 or not v[4:].isdigit():
+            raise ValueError("Phone number must be in format +998XXXXXXXXX")
+        return v
 
 
 class UserUpdate(BaseModel):

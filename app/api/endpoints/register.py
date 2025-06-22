@@ -7,17 +7,40 @@ from app.core.database import get_db
 from app.models.user import User, UserType, StudentInfo, ParentInfo
 from app.schemas.user import UserCreate, StudentInfoCreate, ParentInfoCreate, UserPreferenceCreate
 from app.models.preferences import UserPreference
+from app.models.enums import UserRole
 
 router = APIRouter()
 
 
 @router.post("/user", status_code=status.HTTP_201_CREATED)
 async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Register a new user"""
+    """Register a new user with role selection"""
+    # Map the user role to the corresponding user_type_id
+    # IMPORTANT: If the user_type table changes, update this mapping and the UserRole enum
+    role_to_type_id = {
+        UserRole.STUDENT: 1,            # Student
+        UserRole.PARENT: 2,             # Parent
+        UserRole.TEACHER: 3,            # Teacher
+        UserRole.DEPUTY_PRINCIPAL: 4,   # School Deputy Principal
+        UserRole.PRINCIPAL: 5,          # School Principal
+        UserRole.DISTRICT_PRINCIPAL: 6, # District Principal
+        UserRole.REGIONAL_PRINCIPAL: 7, # Regional Principal
+        UserRole.MINISTRY: 8            # Ministry
+    }
+    
+    # Get the user_type_id based on the selected role
+    user_type_id = role_to_type_id.get(user_data.role)
+    
+    if not user_type_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user role selected"
+        )
+    
     # Check if phone number already exists for this user type
     existing_user = db.query(User).filter(
         User.phone_number == user_data.phone_number,
-        User.user_type_id == user_data.user_type_id
+        User.user_type_id == user_type_id
     ).first()
     
     if existing_user:
@@ -31,7 +54,7 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
         new_user = User(
             phone_number=user_data.phone_number,
             username=user_data.username,
-            user_type_id=user_data.user_type_id,
+            user_type_id=user_type_id,
             password_hash=hash_password(user_data.password)
         )
         db.add(new_user)
